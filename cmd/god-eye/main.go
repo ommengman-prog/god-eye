@@ -18,8 +18,8 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "god-eye -d <domain> [flags]",
-		Short: "Ultra-fast subdomain enumeration tool",
-		Long: `God's Eye - Ultra-fast subdomain enumeration & reconnaissance tool written in Go
+		Short: "AI-powered attack surface discovery & security analysis",
+		Long: `God's Eye - AI-powered attack surface discovery & security analysis tool written in Go
 
 Examples:
   god-eye -d example.com                    Basic scan with all features

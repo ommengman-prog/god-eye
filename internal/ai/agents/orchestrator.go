@@ -148,6 +148,9 @@ func (ao *AgentOrchestrator) Analyze(ctx context.Context, finding Finding) (*Age
 	result.Duration = time.Since(start)
 	result.Reasoning = reasoning
 
+	// Always use coordinator confidence (fast classification is more reliable than LLM output parsing)
+	result.Confidence = confidence
+
 	// Update stats
 	ao.updateStats(agentType, result.Confidence, result.Duration)
 

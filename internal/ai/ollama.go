@@ -227,27 +227,15 @@ Format: SEVERITY: finding`, truncate(summary, 4000))
 
 // GenerateReport creates executive summary and recommendations
 func (c *OllamaClient) GenerateReport(findings string, stats map[string]int) (string, error) {
-	prompt := fmt.Sprintf(`You are a security analyst. Create a brief security report from the scan data below.
+	prompt := fmt.Sprintf(`Security scan report. Stats: %d total, %d active, %d vulns, %d takeovers.
 
-STATISTICS: %d subdomains scanned, %d active, %d vulnerabilities, %d takeovers
-
-SCAN FINDINGS:
+DATA:
 %s
 
-RULES:
-- Use ONLY the subdomain names shown in SCAN FINDINGS above
-- Do NOT invent or make up any subdomain names
-- If no vulnerabilities found, say "No critical issues identified"
-
-FORMAT:
-## Summary
-(2 sentences about what was found)
-
-## Issues
-(List each real subdomain with its actual issues, or "None" if clean)
-
-## Actions
-(1-3 specific recommendations)`,
+Write a 3-line summary:
+1. What was scanned (copy exact subdomain names from DATA)
+2. Main security issues found (or "clean" if none)
+3. Top recommendation`,
 		stats["total"], stats["active"], stats["vulns"], stats["takeovers"], truncate(findings, 3000))
 
 	response, err := c.query(c.DeepModel, prompt, 45*time.Second)

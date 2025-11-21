@@ -50,7 +50,7 @@ func PrintBanner() {
 	fmt.Println(BoldWhite("   ╚██████╔╝╚██████╔╝██████╔╝") + BoldGreen("███████║") + BoldWhite("   ███████╗   ██║   ███████╗"))
 	fmt.Println(BoldWhite("    ╚═════╝  ╚═════╝ ╚═════╝ ") + BoldGreen("╚══════╝") + BoldWhite("   ╚══════╝   ╚═╝   ╚══════╝"))
 	fmt.Println()
-	fmt.Printf("        %s  %s\n", BoldGreen("⚡"), Dim("Ultra-fast subdomain enumeration & reconnaissance"))
+	fmt.Printf("        %s  %s\n", BoldGreen("⚡"), Dim("AI-powered attack surface discovery & security analysis"))
 	fmt.Printf("        %s %s  %s %s  %s %s\n",
 		Dim("Version:"), BoldGreen("0.1"),
 		Dim("By:"), White("github.com/Vyntral"),
