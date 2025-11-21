@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,7 +10,9 @@ import (
 	"time"
 
 	"god-eye/internal/ai"
+	"god-eye/internal/ai/agents"
 	"god-eye/internal/config"
+	"god-eye/internal/discovery"
 	"god-eye/internal/dns"
 	gohttp "god-eye/internal/http"
 	"god-eye/internal/output"
@@ -287,6 +290,57 @@ func Run(cfg config.Config) {
 
 	// Wait for collection to complete
 	collectWg.Wait()
+
+	// Recursive Discovery (if enabled)
+	if cfg.Recursive && len(subdomains) > 0 {
+		if !cfg.Silent && !cfg.JsonOutput {
+			output.PrintEndSection()
+			output.PrintSection("🔄", "RECURSIVE DISCOVERY")
+			output.PrintSubSection(fmt.Sprintf("Learning patterns from %s initial subdomains...", output.BoldGreen(fmt.Sprintf("%d", len(subdomains)))))
+		}
+
+		recursiveDepth := cfg.RecursiveDepth
+		if recursiveDepth < 1 {
+			recursiveDepth = 1
+		} else if recursiveDepth > 5 {
+			recursiveDepth = 5
+		}
+
+		rd := discovery.NewRecursiveDiscovery(discovery.RecursiveConfig{
+			Domain:      cfg.Domain,
+			Resolvers:   resolvers,
+			Timeout:     cfg.Timeout,
+			MaxDepth:    recursiveDepth,
+			Concurrency: effectiveConcurrency,
+		})
+
+		ctx := context.Background()
+		allFound := rd.Discover(ctx, subdomains)
+
+		// Add new discoveries
+		newCount := 0
+		seenMu.Lock()
+		for _, sub := range allFound {
+			if !seen[sub] {
+				seen[sub] = true
+				subdomains = append(subdomains, sub)
+				newCount++
+			}
+		}
+		seenMu.Unlock()
+
+		if !cfg.Silent && !cfg.JsonOutput {
+			stats := rd.GetStats()
+			if newCount > 0 {
+				output.PrintSubSection(fmt.Sprintf("%s Discovered %s new subdomains through recursion",
+					output.Green("✓"), output.BoldGreen(fmt.Sprintf("%d", newCount))))
+			}
+			if stats.LearnedPatterns > 0 {
+				output.PrintSubSection(fmt.Sprintf("%s Learned %s naming patterns",
+					output.Green("✓"), output.BoldCyan(fmt.Sprintf("%d", stats.LearnedPatterns))))
+			}
+		}
+	}
 
 	// Resolve all subdomains
 	if !cfg.Silent && !cfg.JsonOutput {
@@ -673,6 +727,24 @@ func Run(cfg config.Config) {
 		}
 	}
 
+	// Advanced Scanning (Cloud, API, Secrets, Tech, ASN, VHost)
+	if (cfg.CloudScan || cfg.APIScan || cfg.SecretsScan || cfg.TechScan || cfg.ASNScan || cfg.VHostScan) && len(results) > 0 {
+		ctx := context.Background()
+		RunAdvancedScans(ctx, results, &resultsMu, AdvancedConfig{
+			Domain:      cfg.Domain,
+			Timeout:     cfg.Timeout,
+			Concurrency: effectiveConcurrency,
+			CloudScan:   cfg.CloudScan,
+			APIScan:     cfg.APIScan,
+			SecretsScan: cfg.SecretsScan,
+			TechScan:    cfg.TechScan,
+			ASNScan:     cfg.ASNScan,
+			VHostScan:   cfg.VHostScan,
+			Silent:      cfg.Silent,
+			JsonOutput:  cfg.JsonOutput,
+		})
+	}
+
 	// AI-Powered Analysis
 	var aiClient *ai.OllamaClient
 	var aiFindings int32
@@ -861,6 +933,67 @@ func Run(cfg config.Config) {
 
 			if !cfg.Silent && !cfg.JsonOutput {
 				output.PrintEndSection()
+			}
+
+			// Multi-Agent Orchestration (if enabled)
+			if cfg.MultiAgent {
+				if !cfg.Silent && !cfg.JsonOutput {
+					output.PrintSection("🤖", "MULTI-AGENT ANALYSIS")
+					output.PrintSubSection("Routing findings to specialized AI agents...")
+				}
+
+				// Create multi-agent integration
+				integration := agents.NewScannerIntegration(cfg.AIUrl, cfg.AIFastModel, cfg.AIDeepModel, cfg.Verbose)
+
+				// Analyze all results with multi-agent system (low concurrency to avoid Ollama overload)
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+				analysis := integration.AnalyzeAllResults(ctx, results, &resultsMu, 2)
+				cancel()
+
+				if !cfg.Silent && !cfg.JsonOutput {
+					// Print summary
+					output.PrintSubSection(fmt.Sprintf("%s Multi-agent analysis complete: %s critical, %s high, %s medium",
+						output.Green("✓"),
+						output.BoldRed(fmt.Sprintf("%d", analysis.CriticalCount)),
+						output.BoldYellow(fmt.Sprintf("%d", analysis.HighCount)),
+						output.BoldCyan(fmt.Sprintf("%d", analysis.MediumCount))))
+
+					// Show agent breakdown
+					if len(analysis.AgentStats) > 0 {
+						output.PrintSubSection(output.Dim("Agent usage:"))
+						for agent, stat := range analysis.AgentStats {
+							output.PrintSubSection(fmt.Sprintf("  %s: %d analyses (avg confidence: %.0f%%)",
+								output.Cyan(agent), stat.CallCount, stat.AvgConfidence*100))
+						}
+					}
+
+					// Show critical/high findings
+					for _, f := range analysis.Findings {
+						if f.Severity == "critical" {
+							output.PrintSubSection(fmt.Sprintf("  %s %s: %s",
+								output.BgRed(" !! "),
+								output.BoldWhite(f.Title),
+								output.Dim(f.Agent+" agent")))
+						} else if f.Severity == "high" {
+							output.PrintSubSection(fmt.Sprintf("  %s %s: %s",
+								output.Red("!"),
+								f.Title,
+								output.Dim(f.Agent+" agent")))
+						}
+					}
+
+					output.PrintEndSection()
+				}
+
+				// Store findings in results
+				for _, f := range analysis.Findings {
+					finding := fmt.Sprintf("[%s] %s: %s (%s)", strings.ToUpper(f.Severity), f.Agent, f.Title, f.Description)
+					// Add to first result (or create a summary mechanism)
+					for _, r := range results {
+						r.AIFindings = append(r.AIFindings, finding)
+						break
+					}
+				}
 			}
 		}
 	}

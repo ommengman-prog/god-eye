@@ -19,43 +19,7 @@ func CheckAdminPanels(subdomain string, timeout int) []string {
 			return http.ErrUseLastResponse
 		},
 	}
-
-	// Generic admin paths (common across all platforms)
-	// Note: Removed platform-specific paths like /wp-admin, /admin.php, /phpmyadmin
-	// These generate false positives on non-PHP/WordPress sites
-	paths := []string{
-		"/admin", "/administrator",
-		"/login", "/signin", "/auth",
-		"/manager", "/console", "/dashboard",
-		"/admin/login", "/user/login",
-	}
-
-	var found []string
-	baseURLs := []string{
-		fmt.Sprintf("https://%s", subdomain),
-		fmt.Sprintf("http://%s", subdomain),
-	}
-
-	for _, baseURL := range baseURLs {
-		for _, path := range paths {
-			testURL := baseURL + path
-			resp, err := client.Get(testURL)
-			if err != nil {
-				continue
-			}
-			resp.Body.Close()
-
-			// Found if 200, 301, 302, 401, 403 (not 404)
-			if resp.StatusCode != 404 && resp.StatusCode != 0 {
-				found = append(found, path)
-			}
-		}
-		if len(found) > 0 {
-			break
-		}
-	}
-
-	return found
+	return CheckAdminPanelsWithClient(subdomain, client)
 }
 
 // CheckGitSvnExposure checks for exposed .git or .svn directories
@@ -66,38 +30,7 @@ func CheckGitSvnExposure(subdomain string, timeout int) (gitExposed bool, svnExp
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
-
-	baseURLs := []string{
-		fmt.Sprintf("https://%s", subdomain),
-		fmt.Sprintf("http://%s", subdomain),
-	}
-
-	for _, baseURL := range baseURLs {
-		// Check .git
-		resp, err := client.Get(baseURL + "/.git/config")
-		if err == nil {
-			body, _ := io.ReadAll(io.LimitReader(resp.Body, 1000))
-			resp.Body.Close()
-			if resp.StatusCode == 200 && strings.Contains(string(body), "[core]") {
-				gitExposed = true
-			}
-		}
-
-		// Check .svn
-		resp, err = client.Get(baseURL + "/.svn/entries")
-		if err == nil {
-			resp.Body.Close()
-			if resp.StatusCode == 200 {
-				svnExposed = true
-			}
-		}
-
-		if gitExposed || svnExposed {
-			break
-		}
-	}
-
-	return gitExposed, svnExposed
+	return CheckGitSvnExposureWithClient(subdomain, client)
 }
 
 // CheckBackupFiles checks for common backup files
@@ -108,41 +41,7 @@ func CheckBackupFiles(subdomain string, timeout int) []string {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
-
-	// Common backup file patterns
-	paths := []string{
-		"/backup.zip", "/backup.tar.gz", "/backup.sql",
-		"/db.sql", "/database.sql", "/dump.sql",
-		"/site.zip", "/www.zip", "/public.zip",
-		"/config.bak", "/config.old", "/.env.bak",
-		"/index.php.bak", "/index.php.old", "/index.html.bak",
-		"/web.config.bak", "/.htaccess.bak",
-	}
-
-	var found []string
-	baseURLs := []string{
-		fmt.Sprintf("https://%s", subdomain),
-		fmt.Sprintf("http://%s", subdomain),
-	}
-
-	for _, baseURL := range baseURLs {
-		for _, path := range paths {
-			resp, err := client.Head(baseURL + path)
-			if err != nil {
-				continue
-			}
-			resp.Body.Close()
-
-			if resp.StatusCode == 200 {
-				found = append(found, path)
-			}
-		}
-		if len(found) > 0 {
-			break
-		}
-	}
-
-	return found
+	return CheckBackupFilesWithClient(subdomain, client)
 }
 
 // CheckAPIEndpoints checks for common API endpoints
@@ -156,44 +55,7 @@ func CheckAPIEndpoints(subdomain string, timeout int) []string {
 			return http.ErrUseLastResponse
 		},
 	}
-
-	// Common API endpoint patterns
-	paths := []string{
-		"/api", "/api/v1", "/api/v2", "/api/v3",
-		"/graphql", "/graphiql",
-		"/swagger", "/swagger-ui", "/swagger.json", "/swagger.yaml",
-		"/openapi.json", "/openapi.yaml",
-		"/docs", "/api-docs", "/redoc",
-		"/health", "/healthz", "/status",
-		"/metrics", "/actuator", "/actuator/health",
-		"/v1", "/v2", "/rest",
-	}
-
-	var found []string
-	baseURLs := []string{
-		fmt.Sprintf("https://%s", subdomain),
-		fmt.Sprintf("http://%s", subdomain),
-	}
-
-	for _, baseURL := range baseURLs {
-		for _, path := range paths {
-			resp, err := client.Get(baseURL + path)
-			if err != nil {
-				continue
-			}
-			resp.Body.Close()
-
-			// Found if not 404
-			if resp.StatusCode != 404 && resp.StatusCode != 0 {
-				found = append(found, path)
-			}
-		}
-		if len(found) > 0 {
-			break
-		}
-	}
-
-	return found
+	return CheckAPIEndpointsWithClient(subdomain, client)
 }
 
 // WithClient versions for parallel execution

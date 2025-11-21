@@ -29,8 +29,26 @@ type Config struct {
 	AIDeepModel    string
 	AICascade      bool
 	AIDeepAnalysis bool
+	MultiAgent     bool // Enable multi-agent orchestration
 	// Stealth Configuration
 	StealthMode string // off, light, moderate, aggressive, paranoid
+	// Recursive Discovery
+	Recursive      bool // Enable recursive subdomain discovery
+	RecursiveDepth int  // Max recursion depth (default: 3)
+	NoRecursive    bool // Disable recursive (override when --enable-ai)
+	// Advanced Features
+	CloudScan    bool // Enable cloud asset discovery
+	APIScan      bool // Enable API intelligence
+	SecretsScan  bool // Enable passive credential discovery
+	TechScan     bool // Enable technology fingerprinting
+	ASNScan      bool // Enable ASN/CIDR expansion
+	VHostScan    bool // Enable virtual host discovery
+	NoCloudScan  bool // Disable cloud scan (override when --enable-ai)
+	NoAPIScan    bool // Disable API scan (override when --enable-ai)
+	NoSecrets    bool // Disable secrets scan (override when --enable-ai)
+	NoTechScan   bool // Disable tech scan (override when --enable-ai)
+	NoASNScan    bool // Disable ASN scan (override when --enable-ai)
+	NoVHostScan  bool // Disable vhost scan (override when --enable-ai)
 }
 
 // Stats holds scan statistics
@@ -103,6 +121,40 @@ type SubdomainResult struct {
 	AISeverity     string   `json:"ai_severity,omitempty"`
 	AIModel        string   `json:"ai_model,omitempty"`
 	CVEFindings    []string `json:"cve_findings,omitempty"`
+	// Cloud Assets
+	CloudAssets  []CloudAssetResult `json:"cloud_assets,omitempty"`
+	// API Intelligence
+	APIFindings  []APIFindingResult `json:"api_findings,omitempty"`
+	// Secrets Discovery
+	SecretsFound []SecretResult `json:"secrets_found,omitempty"`
+}
+
+// CloudAssetResult represents a cloud asset finding
+type CloudAssetResult struct {
+	Type        string   `json:"type"`
+	Name        string   `json:"name"`
+	URL         string   `json:"url"`
+	Provider    string   `json:"provider"`
+	Status      string   `json:"status"`
+	Permissions []string `json:"permissions,omitempty"`
+}
+
+// APIFindingResult represents an API finding
+type APIFindingResult struct {
+	Type      string   `json:"type"`
+	URL       string   `json:"url"`
+	Issue     string   `json:"issue"`
+	Severity  string   `json:"severity"`
+	Endpoints []string `json:"endpoints,omitempty"`
+}
+
+// SecretResult represents a secret finding
+type SecretResult struct {
+	Type        string `json:"type"`
+	Source      string `json:"source"`
+	Match       string `json:"match"`
+	Severity    string `json:"severity"`
+	Description string `json:"description"`
 }
 
 // TLSFingerprint holds detailed certificate information for appliance detection

@@ -10,6 +10,7 @@ import (
 	"god-eye/internal/config"
 	"god-eye/internal/output"
 	"god-eye/internal/scanner"
+	"god-eye/internal/validator"
 )
 
 func main() {
@@ -36,6 +37,70 @@ Examples:
 				fmt.Println(output.Red("[-]"), "Domain is required. Use -d flag.")
 				cmd.Help()
 				os.Exit(1)
+			}
+
+			// Validate and sanitize inputs
+			cfg.Domain = validator.SanitizeDomain(cfg.Domain)
+			domainValidator := validator.DefaultDomainValidator()
+			if err := domainValidator.ValidateDomain(cfg.Domain); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid domain:", err.Error())
+				os.Exit(1)
+			}
+			if err := validator.ValidateWordlistPath(cfg.Wordlist); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid wordlist path:", err.Error())
+				os.Exit(1)
+			}
+			if err := validator.ValidateOutputPath(cfg.Output); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid output path:", err.Error())
+				os.Exit(1)
+			}
+			if err := validator.ValidateResolvers(cfg.Resolvers); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid resolvers:", err.Error())
+				os.Exit(1)
+			}
+			if err := validator.ValidateConcurrency(cfg.Concurrency); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid concurrency:", err.Error())
+				os.Exit(1)
+			}
+			if err := validator.ValidateTimeout(cfg.Timeout); err != nil {
+				fmt.Println(output.Red("[-]"), "Invalid timeout:", err.Error())
+				os.Exit(1)
+			}
+
+			// When --enable-ai is used, enable all advanced features by default
+			if cfg.EnableAI {
+				// Enable recursive discovery unless explicitly disabled
+				if !cfg.NoRecursive {
+					cfg.Recursive = true
+				}
+				// Enable deep analysis by default with AI
+				if !cfg.AIDeepAnalysis {
+					cfg.AIDeepAnalysis = true
+				}
+				// Enable cloud scanning unless explicitly disabled
+				if !cfg.NoCloudScan {
+					cfg.CloudScan = true
+				}
+				// Enable API scanning unless explicitly disabled
+				if !cfg.NoAPIScan {
+					cfg.APIScan = true
+				}
+				// Enable secrets scanning unless explicitly disabled
+				if !cfg.NoSecrets {
+					cfg.SecretsScan = true
+				}
+				// Enable tech scanning unless explicitly disabled
+				if !cfg.NoTechScan {
+					cfg.TechScan = true
+				}
+				// Enable ASN scanning unless explicitly disabled
+				if !cfg.NoASNScan {
+					cfg.ASNScan = true
+				}
+				// Enable vhost scanning unless explicitly disabled
+				if !cfg.NoVHostScan {
+					cfg.VHostScan = true
+				}
 			}
 
 			// Legal disclaimer
@@ -74,9 +139,29 @@ Examples:
 	rootCmd.Flags().StringVar(&cfg.AIDeepModel, "ai-deep-model", "qwen2.5-coder:7b", "Deep analysis model (supports function calling)")
 	rootCmd.Flags().BoolVar(&cfg.AICascade, "ai-cascade", true, "Use cascade (fast triage + deep analysis)")
 	rootCmd.Flags().BoolVar(&cfg.AIDeepAnalysis, "ai-deep", false, "Enable deep AI analysis on all findings")
+	rootCmd.Flags().BoolVar(&cfg.MultiAgent, "multi-agent", false, "Enable multi-agent orchestration (8 specialized AI agents)")
 
 	// Stealth flags
 	rootCmd.Flags().StringVar(&cfg.StealthMode, "stealth", "", "Stealth mode: light, moderate, aggressive, paranoid (reduces detection)")
+
+	// Recursive discovery flags (enabled by default with --enable-ai)
+	rootCmd.Flags().BoolVar(&cfg.Recursive, "recursive", false, "Enable recursive subdomain discovery with pattern learning")
+	rootCmd.Flags().IntVar(&cfg.RecursiveDepth, "recursive-depth", 3, "Maximum recursion depth (1-5)")
+	rootCmd.Flags().BoolVar(&cfg.NoRecursive, "no-recursive", false, "Disable recursive discovery (when using --enable-ai)")
+
+	// Advanced feature flags (all enabled by default with --enable-ai)
+	rootCmd.Flags().BoolVar(&cfg.CloudScan, "cloud-scan", false, "Enable cloud asset discovery (S3, GCS, Azure)")
+	rootCmd.Flags().BoolVar(&cfg.APIScan, "api-scan", false, "Enable API intelligence (GraphQL, Swagger)")
+	rootCmd.Flags().BoolVar(&cfg.SecretsScan, "secrets-scan", false, "Enable passive credential discovery")
+	rootCmd.Flags().BoolVar(&cfg.TechScan, "tech-scan", false, "Enable technology fingerprinting with CVE matching")
+	rootCmd.Flags().BoolVar(&cfg.NoCloudScan, "no-cloud-scan", false, "Disable cloud scanning (when using --enable-ai)")
+	rootCmd.Flags().BoolVar(&cfg.NoAPIScan, "no-api-scan", false, "Disable API scanning (when using --enable-ai)")
+	rootCmd.Flags().BoolVar(&cfg.NoSecrets, "no-secrets", false, "Disable secrets scanning (when using --enable-ai)")
+	rootCmd.Flags().BoolVar(&cfg.NoTechScan, "no-tech-scan", false, "Disable technology scanning (when using --enable-ai)")
+	rootCmd.Flags().BoolVar(&cfg.ASNScan, "asn-scan", false, "Enable ASN/CIDR expansion discovery")
+	rootCmd.Flags().BoolVar(&cfg.VHostScan, "vhost-scan", false, "Enable virtual host discovery")
+	rootCmd.Flags().BoolVar(&cfg.NoASNScan, "no-asn-scan", false, "Disable ASN scanning (when using --enable-ai)")
+	rootCmd.Flags().BoolVar(&cfg.NoVHostScan, "no-vhost-scan", false, "Disable virtual host scanning (when using --enable-ai)")
 
 	// Database update subcommand
 	updateDbCmd := &cobra.Command{

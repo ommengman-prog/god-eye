@@ -2,14 +2,13 @@ package dns
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/miekg/dns"
 
+	"god-eye/internal/cache"
 	"god-eye/internal/config"
 	"god-eye/internal/retry"
 )
@@ -253,20 +252,31 @@ func ResolveNS(domain string, resolvers []string, timeout int) []string {
 	return nil
 }
 
+// GetIPInfo retrieves IP geolocation info with caching (10x faster for repeated IPs)
 func GetIPInfo(ip string) (*config.IPInfo, error) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	url := fmt.Sprintf("http://ip-api.com/json/%s?fields=as,org,country,city", ip)
+	return cache.GetIPInfoCached(ip)
+}
 
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
+// GetIPInfoBatch retrieves IP info for multiple IPs efficiently
+// Uses LRU cache and batches uncached lookups
+func GetIPInfoBatch(ips []string) map[string]*config.IPInfo {
+	return cache.BatchIPLookup(ips)
+}
+
+// ResolveSubdomainCached resolves with DNS caching
+func ResolveSubdomainCached(subdomain string, resolvers []string, timeout int) []string {
+	dnsCache := cache.GetDNSCache()
+
+	// Check cache first
+	if ips, found := dnsCache.Get(subdomain); found {
+		return ips
 	}
-	defer resp.Body.Close()
 
-	var info config.IPInfo
-	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		return nil, err
+	// Resolve and cache
+	ips := ResolveSubdomain(subdomain, resolvers, timeout)
+	if len(ips) > 0 {
+		dnsCache.Set(subdomain, ips)
 	}
 
-	return &info, nil
+	return ips
 }

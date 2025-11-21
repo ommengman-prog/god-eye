@@ -45,7 +45,7 @@ func PrintResults(results map[string]*config.SubdomainResult, startTime time.Tim
 		output.BoldCyan("║"),
 		fmt.Sprintf("⚠️  Vulns: %s", output.BoldRed(fmt.Sprintf("%d", vulnCount))),
 		output.Dim("|"),
-		fmt.Sprintf("☁️  Cloud: %s", output.Blue(fmt.Sprintf("%d", cloudCount))),
+		fmt.Sprintf("☁️  OnCloud: %s", output.Blue(fmt.Sprintf("%d", cloudCount))),
 		output.Dim("|"),
 		fmt.Sprintf("🎯 Takeover: %s", output.BoldRed(fmt.Sprintf("%d", takeoverCount))),
 		output.BoldCyan("║"))

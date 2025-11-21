@@ -208,6 +208,8 @@ ollama serve &
 
 ### 🧠 AI Integration (NEW!)
 - **Local LLM Analysis**: Powered by Ollama (deepseek-r1:1.5b + qwen2.5-coder)
+- **Multi-Agent Orchestration**: 8 specialized AI agents (XSS, SQLi, Auth, API, Crypto, Secrets, Headers, General)
+- **Intelligent Routing**: Automatic finding classification and agent assignment
 - **JavaScript Code Review**: Intelligent secret detection and vulnerability analysis
 - **CVE Matching**: Automatic vulnerability detection for discovered technologies
 - **Smart Cascade**: Fast triage filter + deep analysis for optimal performance
@@ -305,7 +307,37 @@ The KEV database is used **in addition to** real-time NVD API lookups, providing
 
 # Export with AI findings
 ./god-eye -d target.com --enable-ai -o report.json -f json
+
+# Multi-agent orchestration (8 specialized agents)
+./god-eye -d target.com --enable-ai --multi-agent
 ```
+
+### Multi-Agent Orchestration
+
+Enable specialized AI agents for different vulnerability types:
+
+```bash
+# Enable multi-agent analysis
+./god-eye -d target.com --enable-ai --multi-agent --no-brute
+```
+
+**8 Specialized Agents:**
+| Agent | Specialization |
+|-------|----------------|
+| XSS | Cross-Site Scripting, DOM XSS, Reflected/Stored XSS |
+| SQLi | SQL Injection, Error-based, Blind, Time-based |
+| Auth | Authentication bypass, IDOR, Session, JWT, OAuth |
+| API | REST/GraphQL security, CORS, Rate limiting |
+| Crypto | TLS/SSL issues, Weak ciphers, Key exposure |
+| Secrets | API keys, tokens, hardcoded credentials |
+| Headers | HTTP security headers, CSP, HSTS, cookies |
+| General | Fallback for unclassified findings |
+
+**How it works:**
+1. Coordinator classifies each finding by type
+2. Routes to specialized agent with domain expertise
+3. Agent analyzes with OWASP-aligned knowledge base
+4. Results aggregated with confidence scores
 
 ### Sample AI Output
 
@@ -404,6 +436,7 @@ AI Flags:
       --ai-deep-model       Deep analysis model (default "qwen2.5-coder:7b")
       --ai-cascade          Use cascade (fast triage + deep) (default true)
       --ai-deep             Enable deep AI analysis on all findings
+      --multi-agent         Enable multi-agent orchestration (8 specialized AI agents)
   -h, --help                Help for god-eye
 
 Subcommands:

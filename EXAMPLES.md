@@ -147,6 +147,52 @@ hardcoded credentials and exposed development environments.
 
 ---
 
+## 🤖 Multi-Agent Examples
+
+### Example 6: Multi-Agent Deep Analysis
+
+```bash
+# Enable 8 specialized AI agents for comprehensive analysis
+./god-eye -d target.com --enable-ai --multi-agent --no-brute
+
+# Combine with active filter
+./god-eye -d target.com --enable-ai --multi-agent --active
+```
+
+### Multi-Agent Output
+
+```
+🤖 MULTI-AGENT ANALYSIS
+──────────────────────────────────────────────────
+  Routing findings to specialized AI agents...
+  ✓ Multi-agent analysis complete: 4 critical, 34 high, 0 medium
+  Agent usage:
+    headers: 10 analyses (avg confidence: 50%)
+    crypto: 17 analyses (avg confidence: 50%)
+    xss: 3 analyses (avg confidence: 50%)
+    api: 2 analyses (avg confidence: 50%)
+    secrets: 3 analyses (avg confidence: 50%)
+    !! Weak CSP directives: headers agent
+    !! CORS allows all origins: headers agent
+    ! Missing HSTS: headers agent
+    ! Cookie without Secure flag: headers agent
+```
+
+### Agent-Specific Analysis
+
+Each agent provides domain-specific findings:
+
+| Agent | Sample Finding |
+|-------|----------------|
+| Headers | Missing CSP, HSTS, X-Frame-Options, cookie flags |
+| Secrets | Hardcoded API keys, tokens, passwords in JS |
+| XSS | DOM sinks, innerHTML, unsafe event handlers |
+| API | CORS misconfiguration, rate limiting issues |
+| Auth | IDOR, session fixation, JWT problems |
+| Crypto | Weak TLS, expired certs, self-signed issues |
+
+---
+
 ## 🎭 Scenario-Based Examples
 
 ### Scenario 1: Found a Suspicious Subdomain

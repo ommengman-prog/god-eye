@@ -12,14 +12,15 @@ import (
 )
 
 func FetchCrtsh(domain string) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	// OPTIMIZED: Reduced timeout from 120s to 30s - crt.sh either responds quickly or times out
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	url := fmt.Sprintf("https://crt.sh/?q=%%.%s&output=json", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 120 * time.Second}
+	client := SlowClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func FetchCertspotter(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func FetchAlienVault(domain string) ([]string, error) {
 	url := fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/passive_dns", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -168,7 +169,7 @@ func FetchHackerTarget(domain string) ([]string, error) {
 	url := fmt.Sprintf("https://api.hackertarget.com/hostsearch/?q=%s", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -199,7 +200,7 @@ func FetchURLScan(domain string) ([]string, error) {
 	url := fmt.Sprintf("https://urlscan.io/api/v1/search/?q=domain:%s", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -239,7 +240,7 @@ func FetchRapidDNS(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -272,7 +273,7 @@ func FetchAnubis(domain string) ([]string, error) {
 	url := fmt.Sprintf("https://jldc.me/anubis/subdomains/%s", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -295,7 +296,7 @@ func FetchThreatMiner(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -339,7 +340,7 @@ func FetchDNSRepo(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -372,7 +373,7 @@ func FetchSubdomainCenter(domain string) ([]string, error) {
 	url := fmt.Sprintf("https://api.subdomain.center/?domain=%s", domain)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -395,7 +396,7 @@ func FetchWayback(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 120 * time.Second}
+	client := SlowClient
 	resp, err := client.Do(req)
 	if err != nil {
 		// Return empty instead of error on timeout - Wayback is often slow
@@ -430,7 +431,7 @@ func FetchBinaryEdge(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -465,7 +466,7 @@ func FetchCensys(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -499,7 +500,7 @@ func FetchFacebook(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -533,7 +534,7 @@ func FetchFullHunt(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -561,7 +562,7 @@ func FetchChaos(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -595,7 +596,7 @@ func FetchNetlas(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -629,7 +630,7 @@ func FetchSitedossier(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -663,7 +664,7 @@ func FetchWebArchive(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -698,7 +699,7 @@ func FetchSecurityTrails(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -734,7 +735,7 @@ func FetchHackerOne(domain string) ([]string, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -764,7 +765,7 @@ func FetchDNSDumpster(domain string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 
 	pageReq, _ := http.NewRequestWithContext(ctx, "GET", "https://dnsdumpster.com/", nil)
 	pageReq.Header.Set("User-Agent", "Mozilla/5.0")
@@ -801,7 +802,7 @@ func FetchShodan(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -834,7 +835,7 @@ func FetchBufferOver(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -888,7 +889,7 @@ func FetchCommonCrawl(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := SlowClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -923,7 +924,7 @@ func FetchVirusTotal(domain string) ([]string, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := FastClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -962,7 +963,7 @@ func FetchRiddler(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -996,7 +997,7 @@ func FetchRobtex(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1030,7 +1031,7 @@ func FetchDNSHistory(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1064,7 +1065,7 @@ func FetchArchiveToday(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1098,7 +1099,7 @@ func FetchJLDC(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1131,7 +1132,7 @@ func FetchCrtshPostgres(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := SlowClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1165,7 +1166,7 @@ func FetchSynapsInt(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
@@ -1200,7 +1201,7 @@ func FetchCensysFree(domain string) ([]string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := StandardClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return []string{}, nil
