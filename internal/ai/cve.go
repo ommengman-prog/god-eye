@@ -6,7 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -54,77 +57,141 @@ type NVDResponse struct {
 	} `json:"vulnerabilities"`
 }
 
+// CVECacheEntry holds cached CVE results
+type CVECacheEntry struct {
+	Result    string
+	Timestamp time.Time
+}
+
 var (
 	nvdClient = &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 15 * time.Second,
 	}
 	nvdBaseURL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
-	// Rate limiting: max 5 requests per 30 seconds (NVD allows 10 req/60s without API key)
+	// Rate limiting: NVD allows 5 req/30s without API key
 	lastNVDRequest time.Time
-	nvdRateLimit   = 6 * time.Second // Wait 6 seconds between requests
+	nvdRateLimit   = 7 * time.Second // Wait 7 seconds between requests (safer)
+	nvdMutex       sync.Mutex
+
+	// CVE Cache to avoid duplicate lookups across subdomains
+	cveCache      = make(map[string]*CVECacheEntry)
+	cveCacheMutex sync.RWMutex
 )
 
-// SearchCVE searches for CVE vulnerabilities using NVD API
+// SearchCVE searches for CVE vulnerabilities with caching to avoid duplicates
+// Returns a concise format: "CVE-ID (SEVERITY/SCORE), CVE-ID2 (SEVERITY/SCORE)"
 func SearchCVE(technology string, version string) (string, error) {
 	// Normalize technology name
 	tech := normalizeTechnology(technology)
+	cacheKey := tech // Use normalized tech as cache key
 
-	// Build search query
-	query := tech
-	if version != "" && version != "unknown" {
-		query = fmt.Sprintf("%s %s", tech, version)
-	}
-
-	// Query NVD API
-	cves, err := queryNVD(query)
-	if err != nil {
-		return fmt.Sprintf("Unable to search CVE database for %s: %v", technology, err), nil
-	}
-
-	if len(cves) == 0 {
-		return fmt.Sprintf("No known CVE vulnerabilities found for %s %s in the NVD database. This doesn't guarantee the software is secure - always keep software updated.", technology, version), nil
-	}
-
-	// Format results
-	result := fmt.Sprintf("CVE Vulnerabilities for %s %s:\n\n", technology, version)
-	result += fmt.Sprintf("Found %d CVE(s):\n\n", len(cves))
-
-	// Show top 5 most recent/critical CVEs
-	maxShow := 5
-	if len(cves) < maxShow {
-		maxShow = len(cves)
-	}
-
-	for i := 0; i < maxShow; i++ {
-		cve := cves[i]
-		result += fmt.Sprintf("🔴 %s (%s - Score: %.1f)\n", cve.ID, cve.Severity, cve.Score)
-		result += fmt.Sprintf("   Published: %s\n", cve.Published)
-
-		// Truncate description if too long
-		desc := cve.Description
-		if len(desc) > 200 {
-			desc = desc[:200] + "..."
+	// Check cache first
+	cveCacheMutex.RLock()
+	if entry, ok := cveCache[cacheKey]; ok {
+		cveCacheMutex.RUnlock()
+		// Cache valid for 1 hour
+		if time.Since(entry.Timestamp) < time.Hour {
+			return entry.Result, nil
 		}
-		result += fmt.Sprintf("   %s\n", desc)
+	} else {
+		cveCacheMutex.RUnlock()
+	}
 
-		if len(cve.References) > 0 {
-			result += fmt.Sprintf("   Reference: %s\n", cve.References[0])
+	var allCVEs []CVEInfo
+
+	// Layer 1: Check CISA KEV first (instant, offline, most critical)
+	if kevResult, err := SearchKEV(tech); err == nil && kevResult != "" {
+		// Parse KEV result for CVE IDs
+		lines := strings.Split(kevResult, "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "CVE-") {
+				parts := strings.Fields(line)
+				for _, part := range parts {
+					if strings.HasPrefix(part, "CVE-") {
+						allCVEs = append(allCVEs, CVEInfo{
+							ID:       strings.TrimSuffix(part, ":"),
+							Severity: "CRITICAL",
+							Score:    9.8, // KEV = actively exploited
+						})
+					}
+				}
+			}
 		}
-		result += "\n"
 	}
 
-	if len(cves) > maxShow {
-		result += fmt.Sprintf("... and %d more CVEs. Check https://nvd.nist.gov for complete details.\n", len(cves)-maxShow)
+	// Layer 2: Query NVD API for additional CVEs
+	if nvdCVEs, err := queryNVD(tech); err == nil {
+		allCVEs = append(allCVEs, nvdCVEs...)
 	}
+	// Don't fail on NVD errors - just use what we have
 
-	result += "\n⚠️  Recommendation: Update to the latest version to mitigate known vulnerabilities."
+	// Format result
+	result := formatCVEsConcise(allCVEs)
+
+	// Cache the result
+	cveCacheMutex.Lock()
+	cveCache[cacheKey] = &CVECacheEntry{
+		Result:    result,
+		Timestamp: time.Now(),
+	}
+	cveCacheMutex.Unlock()
 
 	return result, nil
 }
 
-// queryNVD queries the NVD API for CVE information
+// formatCVEsConcise returns a concise CVE summary
+func formatCVEsConcise(cves []CVEInfo) string {
+	if len(cves) == 0 {
+		return ""
+	}
+
+	// Sort by score (highest first)
+	sort.Slice(cves, func(i, j int) bool {
+		return cves[i].Score > cves[j].Score
+	})
+
+	// Deduplicate by CVE ID
+	seen := make(map[string]bool)
+	var uniqueCVEs []CVEInfo
+	for _, cve := range cves {
+		if !seen[cve.ID] && cve.ID != "" {
+			seen[cve.ID] = true
+			uniqueCVEs = append(uniqueCVEs, cve)
+		}
+	}
+
+	if len(uniqueCVEs) == 0 {
+		return ""
+	}
+
+	// Show top 3 most critical
+	maxShow := 3
+	if len(uniqueCVEs) < maxShow {
+		maxShow = len(uniqueCVEs)
+	}
+
+	var parts []string
+	for i := 0; i < maxShow; i++ {
+		cve := uniqueCVEs[i]
+		severity := cve.Severity
+		if severity == "" {
+			severity = "UNK"
+		}
+		parts = append(parts, fmt.Sprintf("%s (%s/%.1f)", cve.ID, severity, cve.Score))
+	}
+
+	result := strings.Join(parts, ", ")
+	if len(uniqueCVEs) > maxShow {
+		result += fmt.Sprintf(" +%d more", len(uniqueCVEs)-maxShow)
+	}
+
+	return result
+}
+
+// queryNVD queries the NVD API for CVE information with thread-safe rate limiting
 func queryNVD(keyword string) ([]CVEInfo, error) {
+	nvdMutex.Lock()
 	// Rate limiting: wait if necessary
 	if !lastNVDRequest.IsZero() {
 		elapsed := time.Since(lastNVDRequest)
@@ -133,11 +200,12 @@ func queryNVD(keyword string) ([]CVEInfo, error) {
 		}
 	}
 	lastNVDRequest = time.Now()
+	nvdMutex.Unlock()
 
 	// Build URL with query parameters
 	params := url.Values{}
 	params.Add("keywordSearch", keyword)
-	params.Add("resultsPerPage", "10") // Limit results
+	params.Add("resultsPerPage", "5") // Limit results for speed
 
 	reqURL := fmt.Sprintf("%s?%s", nvdBaseURL, params.Encode())
 
@@ -171,7 +239,17 @@ func queryNVD(keyword string) ([]CVEInfo, error) {
 
 	// Convert to CVEInfo
 	var cves []CVEInfo
+	cutoffYear := time.Now().Year() - 10 // Filter CVEs older than 10 years
+
 	for _, vuln := range nvdResp.Vulnerabilities {
+		// Filter old CVEs - extract year from CVE ID (format: CVE-YYYY-NNNNN)
+		if len(vuln.CVE.ID) >= 8 {
+			yearStr := vuln.CVE.ID[4:8]
+			if year, err := strconv.Atoi(yearStr); err == nil && year < cutoffYear {
+				continue // Skip CVEs older than cutoff
+			}
+		}
+
 		cve := CVEInfo{
 			ID:        vuln.CVE.ID,
 			Published: formatDate(vuln.CVE.Published),

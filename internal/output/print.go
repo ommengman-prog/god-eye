@@ -43,31 +43,33 @@ var (
 
 func PrintBanner() {
 	fmt.Println()
-	fmt.Println(BoldCyan("    ██████╗  ██████╗ ██████╗ ") + BoldWhite("███████╗") + BoldCyan("   ███████╗██╗   ██╗███████╗"))
-	fmt.Println(BoldCyan("   ██╔════╝ ██╔═══██╗██╔══██╗") + BoldWhite("██╔════╝") + BoldCyan("   ██╔════╝╚██╗ ██╔╝██╔════╝"))
-	fmt.Println(BoldCyan("   ██║  ███╗██║   ██║██║  ██║") + BoldWhite("███████╗") + BoldCyan("   █████╗   ╚████╔╝ █████╗  "))
-	fmt.Println(BoldCyan("   ██║   ██║██║   ██║██║  ██║") + BoldWhite("╚════██║") + BoldCyan("   ██╔══╝    ╚██╔╝  ██╔══╝  "))
-	fmt.Println(BoldCyan("   ╚██████╔╝╚██████╔╝██████╔╝") + BoldWhite("███████║") + BoldCyan("   ███████╗   ██║   ███████╗"))
-	fmt.Println(BoldCyan("    ╚═════╝  ╚═════╝ ╚═════╝ ") + BoldWhite("╚══════╝") + BoldCyan("   ╚══════╝   ╚═╝   ╚══════╝"))
+	fmt.Println(BoldWhite("    ██████╗  ██████╗ ██████╗ ") + BoldGreen("███████╗") + BoldWhite("   ███████╗██╗   ██╗███████╗"))
+	fmt.Println(BoldWhite("   ██╔════╝ ██╔═══██╗██╔══██╗") + BoldGreen("██╔════╝") + BoldWhite("   ██╔════╝╚██╗ ██╔╝██╔════╝"))
+	fmt.Println(BoldWhite("   ██║  ███╗██║   ██║██║  ██║") + BoldGreen("███████╗") + BoldWhite("   █████╗   ╚████╔╝ █████╗  "))
+	fmt.Println(BoldWhite("   ██║   ██║██║   ██║██║  ██║") + BoldGreen("╚════██║") + BoldWhite("   ██╔══╝    ╚██╔╝  ██╔══╝  "))
+	fmt.Println(BoldWhite("   ╚██████╔╝╚██████╔╝██████╔╝") + BoldGreen("███████║") + BoldWhite("   ███████╗   ██║   ███████╗"))
+	fmt.Println(BoldWhite("    ╚═════╝  ╚═════╝ ╚═════╝ ") + BoldGreen("╚══════╝") + BoldWhite("   ╚══════╝   ╚═╝   ╚══════╝"))
 	fmt.Println()
-	fmt.Printf("              %s  %s\n", BoldWhite("⚡"), Dim("Ultra-fast subdomain enumeration & reconnaissance"))
-	fmt.Printf("              %s %s  %s %s  %s %s\n",
+	fmt.Printf("        %s  %s\n", BoldGreen("⚡"), Dim("Ultra-fast subdomain enumeration & reconnaissance"))
+	fmt.Printf("        %s %s  %s %s  %s %s\n",
 		Dim("Version:"), BoldGreen("0.1"),
-		Dim("By:"), Cyan("github.com/Vyntral"),
+		Dim("By:"), White("github.com/Vyntral"),
 		Dim("For:"), Yellow("github.com/Orizon-eu"))
 	fmt.Println()
 }
 
 func PrintSection(icon, title string) {
-	fmt.Printf("\n%s %s %s\n", BoldCyan("┌──"), BoldWhite(icon+" "+title), BoldCyan(strings.Repeat("─", 50)))
+	fmt.Println()
+	fmt.Printf("  %s %s\n", icon, BoldWhite(title))
+	fmt.Printf("  %s\n", Dim(strings.Repeat("─", 50)))
 }
 
 func PrintSubSection(text string) {
-	fmt.Printf("%s %s\n", Cyan("│"), text)
+	fmt.Printf("    %s\n", text)
 }
 
 func PrintEndSection() {
-	fmt.Printf("%s\n", BoldCyan("└"+strings.Repeat("─", 60)))
+	// No more lines, just spacing
 }
 
 func PrintProgress(current, total int, label string) {
@@ -78,7 +80,7 @@ func PrintProgress(current, total int, label string) {
 	}
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
 	percent := float64(current) / float64(total) * 100
-	fmt.Printf("\r%s %s %s %s %.0f%% ", Cyan("│"), label, BoldGreen(bar), Dim(fmt.Sprintf("(%d/%d)", current, total)), percent)
+	fmt.Printf("\r    %s %s %s %.0f%% ", label, Green(bar), Dim(fmt.Sprintf("(%d/%d)", current, total)), percent)
 }
 
 func ClearLine() {
@@ -141,5 +143,5 @@ func SaveOutput(path string, format string, results map[string]*config.Subdomain
 		}
 	}
 
-	fmt.Printf("%s Results saved to %s\n", Green("[+]"), path)
+	fmt.Printf("\n  %s Results saved to %s\n", Green("✓"), path)
 }

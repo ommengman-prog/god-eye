@@ -15,17 +15,8 @@ import (
 func ProbeHTTP(subdomain string, timeout int) *config.SubdomainResult {
 	result := &config.SubdomainResult{}
 
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{
-		Timeout:   time.Duration(timeout) * time.Second,
-		Transport: transport,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	// Use shared transport for connection pooling
+	client := GetSharedClient(timeout)
 
 	urls := []string{
 		fmt.Sprintf("https://%s", subdomain),
@@ -78,6 +69,19 @@ func ProbeHTTP(subdomain string, timeout int) *config.SubdomainResult {
 			case tls.VersionTLS10:
 				result.TLSVersion = "TLS 1.0"
 			}
+
+			// Check for self-signed certificate
+			result.TLSSelfSigned = IsSelfSigned(cert)
+
+			// Analyze certificate for appliance fingerprinting
+			// This is especially useful for self-signed certs (firewalls, VPNs, etc.)
+			if fp := AnalyzeTLSCertificate(cert); fp != nil {
+				result.TLSFingerprint = fp
+				// Add vendor/product to tech stack if detected
+				if fp.Vendor != "" && fp.Product != "" {
+					result.Tech = append(result.Tech, fp.Vendor+" "+fp.Product)
+				}
+			}
 		}
 
 		// Interesting headers
@@ -117,26 +121,46 @@ func ProbeHTTP(subdomain string, timeout int) *config.SubdomainResult {
 
 			// Detect technologies
 			bodyStr := string(body)
-			if strings.Contains(bodyStr, "wp-content") || strings.Contains(bodyStr, "wordpress") {
+			bodyStrLower := strings.ToLower(bodyStr)
+
+			// WordPress - specific patterns
+			if strings.Contains(bodyStr, "wp-content") || strings.Contains(bodyStr, "wp-includes") {
 				result.Tech = append(result.Tech, "WordPress")
 			}
-			if strings.Contains(bodyStr, "_next") || strings.Contains(bodyStr, "Next.js") {
+			// Next.js - specific patterns (check before React since Next uses React)
+			if strings.Contains(bodyStr, "/_next/") || strings.Contains(bodyStr, "__NEXT_DATA__") {
 				result.Tech = append(result.Tech, "Next.js")
-			}
-			if strings.Contains(bodyStr, "react") || strings.Contains(bodyStr, "React") {
+			} else if strings.Contains(bodyStr, "react-root") || strings.Contains(bodyStr, "data-reactroot") ||
+			          strings.Contains(bodyStr, "__REACT_DEVTOOLS_GLOBAL_HOOK__") {
+				// React - only if not Next.js
 				result.Tech = append(result.Tech, "React")
 			}
-			if strings.Contains(bodyStr, "laravel") || strings.Contains(bodyStr, "Laravel") {
+			// Laravel - specific patterns
+			if strings.Contains(bodyStr, "laravel_session") || strings.Contains(bodyStr, "XSRF-TOKEN") {
 				result.Tech = append(result.Tech, "Laravel")
 			}
-			if strings.Contains(bodyStr, "django") || strings.Contains(bodyStr, "Django") {
+			// Django - specific patterns
+			if strings.Contains(bodyStr, "csrfmiddlewaretoken") || strings.Contains(bodyStrLower, "django") {
 				result.Tech = append(result.Tech, "Django")
 			}
-			if strings.Contains(bodyStr, "angular") || strings.Contains(bodyStr, "ng-") {
+			// Angular - more specific patterns (ng-app, ng-controller are Angular 1.x specific)
+			if strings.Contains(bodyStr, "ng-app") || strings.Contains(bodyStr, "ng-controller") ||
+			   strings.Contains(bodyStr, "ng-version") || strings.Contains(bodyStrLower, "angular.js") ||
+			   strings.Contains(bodyStrLower, "angular.min.js") || strings.Contains(bodyStr, "@angular/core") {
 				result.Tech = append(result.Tech, "Angular")
 			}
-			if strings.Contains(bodyStr, "vue") || strings.Contains(bodyStr, "Vue.js") {
+			// Vue.js - specific patterns
+			if strings.Contains(bodyStr, "data-v-") || strings.Contains(bodyStr, "__VUE__") ||
+			   strings.Contains(bodyStr, "vue.js") || strings.Contains(bodyStr, "vue.min.js") {
 				result.Tech = append(result.Tech, "Vue.js")
+			}
+			// Svelte
+			if strings.Contains(bodyStr, "svelte") && strings.Contains(bodyStr, "__svelte") {
+				result.Tech = append(result.Tech, "Svelte")
+			}
+			// Nuxt.js (Vue-based)
+			if strings.Contains(bodyStr, "__NUXT__") || strings.Contains(bodyStr, "_nuxt/") {
+				result.Tech = append(result.Tech, "Nuxt.js")
 			}
 		}
 

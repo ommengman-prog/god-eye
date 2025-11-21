@@ -39,7 +39,7 @@
 <td width="33%" align="center">
 
 ### ⚡ All-in-One
-**11 passive sources** + DNS brute-forcing + HTTP probing + security checks in **one tool**. No need to chain 5+ tools together.
+**20 passive sources** + DNS brute-forcing + HTTP probing + security checks in **one tool**. No need to chain 5+ tools together.
 
 </td>
 <td width="33%" align="center">
@@ -120,14 +120,14 @@ God's Eye now features **AI-powered security analysis** using local LLM models v
 <td width="50%" align="center">
 
 **Basic Scan**
-<img src="docs/images/demo.gif" alt="God's Eye Basic Demo" width="100%">
+<img src="assets/demo.gif" alt="God's Eye Basic Demo" width="100%">
 <em>Standard subdomain enumeration</em>
 
 </td>
 <td width="50%" align="center">
 
 **AI-Powered Scan**
-<img src="docs/images/demo-ai.gif" alt="God's Eye AI Demo" width="100%">
+<img src="assets/demo-ai.gif" alt="God's Eye AI Demo" width="100%">
 <em>With real-time CVE detection & analysis</em>
 
 </td>
@@ -140,7 +140,7 @@ God's Eye now features **AI-powered security analysis** using local LLM models v
 curl https://ollama.ai/install.sh | sh
 
 # Pull models (5-10 mins)
-ollama pull phi3.5:3.8b && ollama pull qwen2.5-coder:7b
+ollama pull deepseek-r1:1.5b && ollama pull qwen2.5-coder:7b
 
 # Run with AI
 ollama serve &
@@ -154,9 +154,9 @@ ollama serve &
 ## Features
 
 ### 🔍 Subdomain Discovery
-- **11 Passive Sources**: crt.sh, Certspotter, AlienVault, HackerTarget, URLScan, RapidDNS, Anubis, ThreatMiner, DNSRepo, SubdomainCenter, Wayback
+- **20 Passive Sources**: crt.sh, Certspotter, AlienVault, HackerTarget, URLScan, RapidDNS, Anubis, ThreatMiner, DNSRepo, SubdomainCenter, Wayback, CommonCrawl, Sitedossier, Riddler, Robtex, DNSHistory, ArchiveToday, JLDC, SynapsInt, CensysFree
 - **DNS Brute-forcing**: Concurrent DNS resolution with customizable wordlists
-- **Wildcard Detection**: Improved detection using multiple random patterns
+- **Advanced Wildcard Detection**: Multi-layer detection using DNS + HTTP validation with confidence scoring
 
 ### 🌐 HTTP Probing
 - Status code, content length, response time
@@ -164,6 +164,7 @@ ollama serve &
 - Technology fingerprinting (WordPress, React, Next.js, Angular, Laravel, Django, etc.)
 - Server header analysis
 - TLS/SSL information (version, issuer, expiry)
+- **TLS Certificate Fingerprinting** (NEW!) - Detects firewalls, VPNs, and appliances from self-signed certificates
 
 ### 🛡️ Security Checks
 - **Security Headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.
@@ -187,14 +188,26 @@ ollama serve &
 - **JavaScript Analysis**: Extracts secrets, API keys, and hidden endpoints from JS files
 - **Port Scanning**: Quick TCP port scan on common ports
 - **WAF Detection**: Identifies Cloudflare, AWS WAF, Akamai, Imperva, etc.
+- **TLS Appliance Detection**: Identifies 25+ security vendors from certificates (Fortinet, Palo Alto, Cisco, F5, etc.)
 
 ### ⚡ Performance
 - **Parallel HTTP Checks**: All security checks run concurrently
 - **Connection Pooling**: Shared HTTP client with TCP/TLS reuse
 - **High Concurrency**: Up to 1000+ concurrent workers
+- **Intelligent Rate Limiting**: Adaptive backoff based on error rates
+- **Retry Logic**: Automatic retry with exponential backoff for DNS/HTTP failures
+- **Progress Bars**: Real-time progress with ETA and speed indicators
+
+### 🥷 Stealth Mode
+- **4 Stealth Levels**: light, moderate, aggressive, paranoid
+- **User-Agent Rotation**: 25+ realistic browser User-Agents
+- **Randomized Delays**: Configurable jitter between requests
+- **Per-Host Throttling**: Limit concurrent requests per target
+- **DNS Query Distribution**: Spread queries across resolvers
+- **Request Randomization**: Shuffle wordlists and targets
 
 ### 🧠 AI Integration (NEW!)
-- **Local LLM Analysis**: Powered by Ollama (phi3.5 + qwen2.5-coder)
+- **Local LLM Analysis**: Powered by Ollama (deepseek-r1:1.5b + qwen2.5-coder)
 - **JavaScript Code Review**: Intelligent secret detection and vulnerability analysis
 - **CVE Matching**: Automatic vulnerability detection for discovered technologies
 - **Smart Cascade**: Fast triage filter + deep analysis for optimal performance
@@ -227,7 +240,7 @@ Traditional regex-based tools miss context. God's Eye's AI integration provides:
 curl https://ollama.ai/install.sh | sh
 
 # 2. Pull AI models (5-10 minutes, one-time)
-ollama pull phi3.5:3.8b          # Fast triage (~3GB)
+ollama pull deepseek-r1:1.5b          # Fast triage (~3GB)
 ollama pull qwen2.5-coder:7b     # Deep analysis (~6GB)
 
 # 3. Start Ollama server
@@ -247,6 +260,32 @@ ollama serve
 | **Anomaly Detection** | Cross-subdomain pattern analysis | `AI:MEDIUM: Dev environment exposed in production` |
 | **Executive Reports** | Professional summaries with remediation | Auto-generated markdown reports |
 
+### CVE Database (CISA KEV)
+
+God's Eye includes an **offline CVE database** powered by the [CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog:
+
+- **1,400+ actively exploited CVEs** - Confirmed vulnerabilities used in real-world attacks
+- **Auto-download** - Database downloads automatically on first AI-enabled scan
+- **Instant lookups** - Zero-latency, offline CVE matching
+- **Daily updates** - CISA updates the catalog daily; refresh with `update-db`
+
+```bash
+# Update CVE database manually
+./god-eye update-db
+
+# Check database status
+./god-eye db-info
+
+# The database auto-downloads on first use with --enable-ai
+./god-eye -d target.com --enable-ai  # Auto-downloads if not present
+```
+
+**Database location:** `~/.god-eye/kev.json` (~1.3MB)
+
+The KEV database is used **in addition to** real-time NVD API lookups, providing a multi-layer approach:
+1. **KEV (instant)** - Critical, actively exploited vulnerabilities
+2. **NVD API (fallback)** - Comprehensive CVE database (rate-limited)
+
 ### AI Usage Examples
 
 ```bash
@@ -261,7 +300,7 @@ ollama serve
 
 # Custom models
 ./god-eye -d target.com --enable-ai \
-  --ai-fast-model phi3.5:3.8b \
+  --ai-fast-model deepseek-r1:1.5b \
   --ai-deep-model deepseek-coder-v2:16b
 
 # Export with AI findings
@@ -271,7 +310,7 @@ ollama serve
 ### Sample AI Output
 
 ```
-🧠 AI-POWERED ANALYSIS (cascade: phi3.5:3.8b + qwen2.5-coder:7b)
+🧠 AI-POWERED ANALYSIS (cascade: deepseek-r1:1.5b + qwen2.5-coder:7b)
 
  AI:C  api.target.com → 4 findings
  AI:H  admin.target.com → 2 findings
@@ -361,11 +400,15 @@ Flags:
 AI Flags:
       --enable-ai           Enable AI-powered analysis with Ollama
       --ai-url string       Ollama API URL (default "http://localhost:11434")
-      --ai-fast-model       Fast triage model (default "phi3.5:3.8b")
+      --ai-fast-model       Fast triage model (default "deepseek-r1:1.5b")
       --ai-deep-model       Deep analysis model (default "qwen2.5-coder:7b")
       --ai-cascade          Use cascade (fast triage + deep) (default true)
       --ai-deep             Enable deep AI analysis on all findings
   -h, --help                Help for god-eye
+
+Subcommands:
+  update-db                 Download/update CISA KEV vulnerability database
+  db-info                   Show vulnerability database status
 ```
 
 ### Examples
@@ -398,6 +441,39 @@ AI Flags:
 # Silent mode for piping
 ./god-eye -d example.com -s | httpx
 ```
+
+### Stealth Mode
+
+For evasion during authorized penetration testing:
+
+```bash
+# Light stealth (reduces detection, minimal speed impact)
+./god-eye -d target.com --stealth light
+
+# Moderate stealth (balanced evasion/speed)
+./god-eye -d target.com --stealth moderate
+
+# Aggressive stealth (slow, high evasion)
+./god-eye -d target.com --stealth aggressive
+
+# Paranoid mode (very slow, maximum evasion)
+./god-eye -d target.com --stealth paranoid
+```
+
+**Stealth Mode Comparison:**
+
+| Mode | Max Threads | Delay | Rate/sec | Use Case |
+|------|-------------|-------|----------|----------|
+| `light` | 100 | 10-50ms | 100 | Avoid basic rate limits |
+| `moderate` | 30 | 50-200ms | 30 | Evade WAF detection |
+| `aggressive` | 10 | 200ms-1s | 10 | Sensitive targets |
+| `paranoid` | 3 | 1-5s | 2 | Maximum stealth needed |
+
+**Features by Mode:**
+- **All modes**: User-Agent rotation (25+ browsers)
+- **Moderate+**: Request randomization, DNS query distribution
+- **Aggressive+**: 50% timing jitter, per-host throttling
+- **Paranoid**: 70% jitter, single connection per host
 
 ---
 
@@ -432,6 +508,8 @@ Performance comparison with other popular subdomain enumeration tools on a mediu
 | Cloud Detection | ✅ | ❌ | ❌ | ❌ |
 | Port Scanning | ✅ | ❌ | ❌ | ❌ |
 | Technology Detection | ✅ | ❌ | ❌ | ❌ |
+| TLS Appliance Fingerprint | ✅ | ❌ | ❌ | ❌ |
+| AI-Powered Analysis | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -447,24 +525,68 @@ God's Eye features a modern, colorful CLI with:
 
 ### JSON Output
 
+The `--json` flag outputs a structured report with full metadata:
+
 ```json
-[
-  {
-    "subdomain": "api.example.com",
-    "ips": ["192.168.1.1"],
-    "cname": "api-gateway.cloudprovider.com",
-    "status_code": 200,
-    "title": "API Documentation",
-    "technologies": ["nginx", "Node.js"],
-    "cloud_provider": "AWS",
-    "security_headers": ["HSTS", "CSP"],
-    "missing_headers": ["X-Frame-Options"],
-    "admin_panels": ["/admin"],
-    "api_endpoints": ["/api/v1", "/swagger"],
-    "js_files": ["/static/app.js"],
-    "js_secrets": ["api_key: AKIAIOSFODNN7EXAMPLE"]
-  }
-]
+{
+  "meta": {
+    "version": "0.1",
+    "tool_name": "God's Eye",
+    "target": "example.com",
+    "start_time": "2024-01-15T10:30:00Z",
+    "end_time": "2024-01-15T10:32:15Z",
+    "duration": "2m15s",
+    "duration_ms": 135000,
+    "concurrency": 1000,
+    "timeout": 5,
+    "options": {
+      "brute_force": true,
+      "http_probe": true,
+      "ai_analysis": true
+    }
+  },
+  "stats": {
+    "total_subdomains": 25,
+    "active_subdomains": 18,
+    "vulnerabilities": 3,
+    "takeover_vulnerable": 1,
+    "ai_findings": 12
+  },
+  "wildcard": {
+    "detected": false,
+    "confidence": 0.95
+  },
+  "findings": {
+    "critical": [{"subdomain": "dev.example.com", "type": "Subdomain Takeover", "description": "GitHub Pages"}],
+    "high": [{"subdomain": "api.example.com", "type": "Git Repository Exposed", "description": ".git directory accessible"}],
+    "medium": [],
+    "low": [],
+    "info": []
+  },
+  "subdomains": [
+    {
+      "subdomain": "api.example.com",
+      "ips": ["192.168.1.1"],
+      "cname": "api-gateway.cloudprovider.com",
+      "status_code": 200,
+      "title": "API Documentation",
+      "technologies": ["nginx", "Node.js"],
+      "cloud_provider": "AWS",
+      "security_headers": ["HSTS", "CSP"],
+      "missing_headers": ["X-Frame-Options"],
+      "tls_self_signed": false,
+      "tls_fingerprint": {
+        "vendor": "Fortinet",
+        "product": "FortiGate",
+        "version": "60F",
+        "appliance_type": "firewall",
+        "internal_hosts": ["fw-internal.corp.local"]
+      },
+      "ai_findings": ["Potential IDOR in /api/users endpoint"],
+      "cve_findings": ["nginx: CVE-2021-23017"]
+    }
+  ]
+}
 ```
 
 ### CSV Output
@@ -504,6 +626,34 @@ Checks 110+ vulnerable services including:
 - **Admin Panels & API Endpoints**: These checks test both HTTPS and HTTP, reporting 200 (found) and 401/403 (protected) responses.
 - **Email Security (SPF/DMARC)**: Records are checked on the target domain specified with `-d`. Make sure to specify the root domain (e.g., `example.com` not `sub.example.com`) for accurate email security results.
 - **SPA Detection**: The tool detects Single Page Applications that return the same content for all routes, filtering out false positives for admin panels, API endpoints, and backup files.
+
+### TLS Certificate Fingerprinting
+
+God's Eye analyzes TLS certificates to identify security appliances, especially useful for self-signed certificates commonly used by firewalls and VPN gateways.
+
+**Detected Vendors (25+):**
+
+| Category | Vendors |
+|----------|---------|
+| **Firewalls** | Fortinet FortiGate, Palo Alto PAN-OS, Cisco ASA/Firepower, SonicWall, Check Point, pfSense, OPNsense, WatchGuard, Sophos XG, Juniper SRX, Zyxel USG |
+| **VPN** | OpenVPN, Pulse Secure, GlobalProtect, Cisco AnyConnect |
+| **Load Balancers** | F5 BIG-IP, Citrix NetScaler, HAProxy, NGINX Plus, Kemp LoadMaster |
+| **WAF/Security** | Barracuda, Imperva |
+| **Other** | MikroTik, Ubiquiti UniFi, VMware NSX, DrayTek Vigor |
+
+**Features:**
+- Detects vendor and product from certificate Subject/Issuer fields
+- Extracts version information where available (e.g., `FortiGate v60F`)
+- Identifies internal hostnames from certificate SANs (`.local`, `.internal`, etc.)
+- Reports appliance type (firewall, vpn, loadbalancer, proxy, waf)
+
+**Sample Output:**
+```
+● vpn.target.com [200]
+    Security: TLS: TLS 1.2 (self-signed)
+    APPLIANCE: Fortinet FortiGate v60F (firewall)
+    INTERNAL: fw-internal.corp.local, vpn-gw-01.internal
+```
 
 ---
 
@@ -559,7 +709,7 @@ Tested on production domain (authorized testing):
 | Passive Enumeration | ~25 sec | - |
 | HTTP Probing | ~35 sec | - |
 | Security Checks | ~40 sec | - |
-| AI Triage | ~10 sec | phi3.5:3.8b |
+| AI Triage | ~10 sec | deepseek-r1:1.5b |
 | AI Deep Analysis | ~25 sec | qwen2.5-coder:7b |
 | Report Generation | ~3 sec | qwen2.5-coder:7b |
 

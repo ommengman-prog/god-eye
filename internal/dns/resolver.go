@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,9 +11,16 @@ import (
 	"github.com/miekg/dns"
 
 	"god-eye/internal/config"
+	"god-eye/internal/retry"
 )
 
+// ResolveSubdomain resolves a subdomain to IP addresses with retry logic
 func ResolveSubdomain(subdomain string, resolvers []string, timeout int) []string {
+	return ResolveSubdomainWithRetry(subdomain, resolvers, timeout, true)
+}
+
+// ResolveSubdomainWithRetry resolves with optional retry
+func ResolveSubdomainWithRetry(subdomain string, resolvers []string, timeout int, useRetry bool) []string {
 	c := dns.Client{
 		Timeout: time.Duration(timeout) * time.Second,
 	}
@@ -20,16 +28,48 @@ func ResolveSubdomain(subdomain string, resolvers []string, timeout int) []strin
 	m := dns.Msg{}
 	m.SetQuestion(dns.Fqdn(subdomain), dns.TypeA)
 
+	// Try each resolver
 	for _, resolver := range resolvers {
-		r, _, err := c.Exchange(&m, resolver)
-		if err != nil || r == nil {
-			continue
-		}
-
 		var ips []string
-		for _, ans := range r.Answer {
-			if a, ok := ans.(*dns.A); ok {
-				ips = append(ips, a.A.String())
+
+		if useRetry {
+			// Use retry logic
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout*2)*time.Second)
+			result := retry.Do(ctx, retry.DNSConfig(), func() (interface{}, error) {
+				r, _, err := c.Exchange(&m, resolver)
+				if err != nil {
+					return nil, err
+				}
+				if r == nil {
+					return nil, fmt.Errorf("nil response")
+				}
+
+				var resolvedIPs []string
+				for _, ans := range r.Answer {
+					if a, ok := ans.(*dns.A); ok {
+						resolvedIPs = append(resolvedIPs, a.A.String())
+					}
+				}
+
+				if len(resolvedIPs) == 0 {
+					return nil, fmt.Errorf("no A records")
+				}
+				return resolvedIPs, nil
+			})
+			cancel()
+
+			if result.Error == nil && result.Value != nil {
+				ips = result.Value.([]string)
+			}
+		} else {
+			// Direct resolution without retry
+			r, _, err := c.Exchange(&m, resolver)
+			if err == nil && r != nil {
+				for _, ans := range r.Answer {
+					if a, ok := ans.(*dns.A); ok {
+						ips = append(ips, a.A.String())
+					}
+				}
 			}
 		}
 

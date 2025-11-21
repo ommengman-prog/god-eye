@@ -22,8 +22,8 @@ ollama --version
 ### 2. Pull Recommended Models
 
 ```bash
-# Fast triage model (3GB) - REQUIRED
-ollama pull phi3.5:3.8b
+# Fast triage model (1.1GB) - REQUIRED
+ollama pull deepseek-r1:1.5b
 
 # Deep analysis model (6GB) - REQUIRED
 ollama pull qwen2.5-coder:7b
@@ -66,7 +66,7 @@ Leave this running in a terminal. Ollama will run on `http://localhost:11434`
                │
                ▼
 ┌──────────────────────────────────────────────┐
-│  TIER 1: FAST TRIAGE (Phi-3.5:3.8b)         │
+│  TIER 1: FAST TRIAGE (DeepSeek-R1:1.5b)     │
 │  • Quick classification: relevant vs skip    │
 │  • Completes in ~2-5 seconds                 │
 │  • Filters false positives                   │
@@ -179,7 +179,7 @@ Function calling requires models that support tool use:
 - ✅ **qwen2.5-coder:7b** (default deep model) - Full support
 - ✅ **llama3.1:8b** - Excellent function calling
 - ✅ **llama3.2:3b** - Basic support
-- ⚠️ **phi3.5:3.8b** (fast model) - No function calling (triage only)
+- ✅ **deepseek-r1:1.5b** (fast model) - Excellent reasoning for size
 
 ### Rate Limits
 
@@ -225,7 +225,7 @@ God's Eye automatically handles rate limiting and caches results.
 ```bash
 # Use different models
 ./god-eye -d target.com --enable-ai \
-  --ai-fast-model phi3.5:3.8b \
+  --ai-fast-model deepseek-r1:1.5b \
   --ai-deep-model deepseek-coder-v2:16b
 
 # Disable cascade (deep analysis only)
@@ -250,7 +250,7 @@ God's Eye automatically handles rate limiting and caches results.
 |------|---------|-------------|
 | `--enable-ai` | `false` | Enable AI analysis |
 | `--ai-url` | `http://localhost:11434` | Ollama API URL |
-| `--ai-fast-model` | `phi3.5:3.8b` | Fast triage model |
+| `--ai-fast-model` | `deepseek-r1:1.5b` | Fast triage model |
 | `--ai-deep-model` | `qwen2.5-coder:7b` | Deep analysis model |
 | `--ai-cascade` | `true` | Use cascade mode |
 | `--ai-deep` | `false` | Deep analysis on all findings |
@@ -282,7 +282,7 @@ ollama list
 **Solution:**
 ```bash
 # Pull missing model
-ollama pull phi3.5:3.8b
+ollama pull deepseek-r1:1.5b
 ollama pull qwen2.5-coder:7b
 
 # Verify
@@ -320,7 +320,7 @@ ollama list
 **Solutions:**
 - **Option 1:** Use smaller models
   ```bash
-  ollama pull phi3.5:3.8b  # 3GB instead of 7GB
+  ollama pull deepseek-r1:1.5b  # 3GB instead of 7GB
   ```
 
 - **Option 2:** Disable cascade
@@ -350,7 +350,7 @@ ollama list
 | **AI Analysis Time** | ~30-40 seconds |
 | **AI Overhead** | ~20% of total scan time |
 | **Memory Usage** | ~7GB (both models loaded) |
-| **Models Used** | phi3.5:3.8b + qwen2.5-coder:7b |
+| **Models Used** | deepseek-r1:1.5b + qwen2.5-coder:7b |
 | **Cascade Mode** | Enabled (default) |
 
 **Sample AI Findings:**
@@ -377,7 +377,7 @@ ollama list
 
 | Model | Size | Speed | Accuracy | Use Case |
 |-------|------|-------|----------|----------|
-| **phi3.5:3.8b** | 3GB | ⚡⚡⚡⚡⚡ | ⭐⭐⭐⭐ | Fast triage |
+| **deepseek-r1:1.5b** | 3GB | ⚡⚡⚡⚡⚡ | ⭐⭐⭐⭐ | Fast triage |
 | **qwen2.5-coder:7b** | 6GB | ⚡⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Deep analysis |
 | **deepseek-coder-v2:16b** | 12GB | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Maximum accuracy |
 | **llama3.2:3b** | 2.5GB | ⚡⚡⚡⚡⚡ | ⭐⭐⭐ | Ultra-fast |
@@ -428,7 +428,7 @@ ollama list
 ## 📖 Example Output
 
 ```
-🧠 AI-POWERED ANALYSIS (cascade: phi3.5:3.8b + qwen2.5-coder:7b)
+🧠 AI-POWERED ANALYSIS (cascade: deepseek-r1:1.5b + qwen2.5-coder:7b)
    Analyzing findings with local LLM
 
    AI:C  admin.example.com → 3 findings
@@ -498,7 +498,7 @@ killall ollama
 rm -rf ~/.ollama/models
 
 # Re-pull
-ollama pull phi3.5:3.8b
+ollama pull deepseek-r1:1.5b
 ollama pull qwen2.5-coder:7b
 ```
 
@@ -544,14 +544,14 @@ ollama pull qwen2.5-coder:7b
 | **Passive Enumeration** | ~25 seconds | 20 concurrent sources |
 | **HTTP Probing** | ~35 seconds | 2 active subdomains |
 | **Security Checks** | ~40 seconds | 13 checks per subdomain |
-| **AI Triage** | ~10 seconds | phi3.5:3.8b fast filtering |
+| **AI Triage** | ~10 seconds | deepseek-r1:1.5b fast filtering |
 | **AI Deep Analysis** | ~25 seconds | qwen2.5-coder:7b analysis |
 | **Report Generation** | ~3 seconds | Executive summary |
 | **Total** | **2:18 min** | With AI enabled |
 
 ### AI Performance Characteristics
 
-**Fast Triage Model (Phi-3.5:3.8b):**
+**Fast Triage Model (DeepSeek-R1:1.5b):**
 - Initial load time: ~3-5 seconds (first request)
 - Analysis time: 2-5 seconds per finding
 - Memory footprint: ~3.5GB

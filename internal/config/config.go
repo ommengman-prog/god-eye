@@ -23,12 +23,14 @@ type Config struct {
 	OnlyActive  bool
 	JsonOutput  bool
 	// AI Configuration
-	EnableAI      bool
-	AIUrl         string
-	AIFastModel   string
-	AIDeepModel   string
-	AICascade     bool
+	EnableAI       bool
+	AIUrl          string
+	AIFastModel    string
+	AIDeepModel    string
+	AICascade      bool
 	AIDeepAnalysis bool
+	// Stealth Configuration
+	StealthMode string // off, light, moderate, aggressive, paranoid
 }
 
 // Stats holds scan statistics
@@ -61,6 +63,9 @@ type SubdomainResult struct {
 	TLSVersion    string   `json:"tls_version,omitempty"`
 	TLSIssuer     string   `json:"tls_issuer,omitempty"`
 	TLSExpiry     string   `json:"tls_expiry,omitempty"`
+	TLSSelfSigned bool     `json:"tls_self_signed,omitempty"`
+	// TLS Fingerprint for appliance detection
+	TLSFingerprint *TLSFingerprint `json:"tls_fingerprint,omitempty"`
 	Ports         []int    `json:"ports,omitempty"`
 	Takeover      string   `json:"takeover,omitempty"`
 	ResponseMs    int64    `json:"response_ms,omitempty"`
@@ -98,6 +103,21 @@ type SubdomainResult struct {
 	AISeverity     string   `json:"ai_severity,omitempty"`
 	AIModel        string   `json:"ai_model,omitempty"`
 	CVEFindings    []string `json:"cve_findings,omitempty"`
+}
+
+// TLSFingerprint holds detailed certificate information for appliance detection
+type TLSFingerprint struct {
+	Vendor        string `json:"vendor,omitempty"`          // Detected vendor (Fortinet, Palo Alto, etc.)
+	Product       string `json:"product,omitempty"`         // Product name (FortiGate, PA-xxx, etc.)
+	Version       string `json:"version,omitempty"`         // Version if detectable
+	SubjectCN     string `json:"subject_cn,omitempty"`      // Subject Common Name
+	SubjectOrg    string `json:"subject_org,omitempty"`     // Subject Organization
+	SubjectOU     string `json:"subject_ou,omitempty"`      // Subject Organizational Unit
+	IssuerCN      string `json:"issuer_cn,omitempty"`       // Issuer Common Name
+	IssuerOrg     string `json:"issuer_org,omitempty"`      // Issuer Organization
+	SerialNumber  string `json:"serial_number,omitempty"`   // Certificate serial number
+	InternalHosts []string `json:"internal_hosts,omitempty"` // Potential internal hostnames found
+	ApplianceType string `json:"appliance_type,omitempty"`  // firewall, vpn, loadbalancer, proxy, etc.
 }
 
 // IPInfo holds IP geolocation data

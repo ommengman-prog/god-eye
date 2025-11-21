@@ -92,7 +92,7 @@ time ./god-eye -d target.com --enable-ai --no-brute
                  React version 16.8.0 has known XSS vulnerability
                  Missing rate limiting on /api/v1/users endpoint
                  (1 more findings...)
-                 model: phi3.5:3.8b→qwen2.5-coder:7b
+                 model: deepseek-r1:1.5b→qwen2.5-coder:7b
     CVE: React: CVE-2020-15168 - XSS vulnerability in development mode
 ═══════════════════════════════════════════════════
 ```
@@ -100,7 +100,7 @@ time ./god-eye -d target.com --enable-ai --no-brute
 ### AI Report Section
 
 ```
-🧠 AI-POWERED ANALYSIS (cascade: phi3.5:3.8b + qwen2.5-coder:7b)
+🧠 AI-POWERED ANALYSIS (cascade: deepseek-r1:1.5b + qwen2.5-coder:7b)
    Analyzing findings with local LLM
 
    AI:C  api.example.com → 4 findings
@@ -336,7 +336,7 @@ time ./god-eye -d target.com --enable-ai --ai-deep --no-brute
 
 # Use fast model only (skip deep analysis)
 ./god-eye -d large-target.com --enable-ai --ai-cascade=false \
-  --ai-deep-model phi3.5:3.8b
+  --ai-deep-model deepseek-r1:1.5b
 
 # Disable AI for initial enumeration, enable for interesting findings
 ./god-eye -d large-target.com --no-brute -s > subdomains.txt

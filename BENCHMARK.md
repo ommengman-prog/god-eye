@@ -108,7 +108,7 @@ Average CPU usage during scan:
 | DNSRepo | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Subdomain Center | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Wayback Machine | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Total Sources** | **11** | **25+** | **55+** | **14** | **9** | **6** |
+| **Total Sources** | **20** | **25+** | **55+** | **14** | **9** | **6** |
 
 ### Active Scanning Features
 
@@ -171,7 +171,7 @@ This eliminates the need to chain multiple tools together.
 
 #### 2. Parallel Processing Architecture
 God's Eye uses Go's goroutines for maximum parallelization:
-- 11 passive sources queried simultaneously
+- 20 passive sources queried simultaneously
 - DNS brute-force with configurable concurrency
 - 13 HTTP security checks run in parallel per subdomain
 
@@ -352,5 +352,6 @@ Comprehensive security posture assessment:
 
 ---
 
-*Benchmark conducted by Orizon Security Team*
+*Note: Benchmark data is based on internal testing and may vary depending on network conditions, target complexity, and hardware specifications. These numbers are meant to provide a general comparison rather than precise measurements.*
+
 *Last updated: 2025*

@@ -20,13 +20,12 @@ func CheckAdminPanels(subdomain string, timeout int) []string {
 		},
 	}
 
-	// Common admin panel paths
+	// Generic admin paths (common across all platforms)
+	// Note: Removed platform-specific paths like /wp-admin, /admin.php, /phpmyadmin
+	// These generate false positives on non-PHP/WordPress sites
 	paths := []string{
-		"/admin", "/administrator", "/admin.php", "/admin.html",
-		"/login", "/login.php", "/signin", "/auth",
-		"/wp-admin", "/wp-login.php",
-		"/phpmyadmin", "/pma", "/mysql",
-		"/cpanel", "/webmail",
+		"/admin", "/administrator",
+		"/login", "/signin", "/auth",
 		"/manager", "/console", "/dashboard",
 		"/admin/login", "/user/login",
 	}
@@ -200,15 +199,16 @@ func CheckAPIEndpoints(subdomain string, timeout int) []string {
 // WithClient versions for parallel execution
 
 func CheckAdminPanelsWithClient(subdomain string, client *http.Client) []string {
+	// Generic admin paths (common across all platforms)
 	paths := []string{
-		"/admin", "/administrator", "/admin.php", "/admin.html",
-		"/login", "/login.php", "/signin", "/auth",
-		"/wp-admin", "/wp-login.php",
-		"/phpmyadmin", "/pma", "/mysql",
-		"/cpanel", "/webmail",
+		"/admin", "/administrator",
+		"/login", "/signin", "/auth",
 		"/manager", "/console", "/dashboard",
 		"/admin/login", "/user/login",
 	}
+	// Note: We removed platform-specific paths like /wp-admin, /admin.php, /login.php
+	// These generate false positives on non-PHP/WordPress sites
+	// The tech detection should be used to check platform-specific paths
 
 	var found []string
 	baseURLs := []string{

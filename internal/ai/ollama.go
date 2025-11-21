@@ -12,7 +12,7 @@ import (
 // OllamaClient handles communication with local Ollama instance
 type OllamaClient struct {
 	BaseURL     string
-	FastModel   string // phi3.5:3.8b for quick triage
+	FastModel   string // deepseek-r1:1.5b for quick triage
 	DeepModel   string // qwen2.5-coder:7b for deep analysis
 	Timeout     time.Duration
 	EnableCascade bool
@@ -51,7 +51,7 @@ func NewOllamaClient(baseURL, fastModel, deepModel string, enableCascade bool) *
 		baseURL = "http://localhost:11434"
 	}
 	if fastModel == "" {
-		fastModel = "phi3.5:3.8b"
+		fastModel = "deepseek-r1:1.5b"
 	}
 	if deepModel == "" {
 		deepModel = "qwen2.5-coder:7b"
@@ -227,7 +227,7 @@ Format: SEVERITY: finding`, truncate(summary, 4000))
 
 // GenerateReport creates executive summary and recommendations
 func (c *OllamaClient) GenerateReport(findings string, stats map[string]int) (string, error) {
-	prompt := fmt.Sprintf(`Create a concise security assessment report:
+	prompt := fmt.Sprintf(`You are a security analyst. Create a security assessment report based on the findings below.
 
 SCAN STATISTICS:
 - Total subdomains: %d
@@ -235,15 +235,21 @@ SCAN STATISTICS:
 - Vulnerabilities: %d
 - Takeovers: %d
 
-KEY FINDINGS:
+FINDINGS DATA (use these EXACT subdomain names in your report):
 %s
 
-Generate report with:
-## Executive Summary (2-3 sentences)
-## Critical Findings (prioritized list)
-## Recommendations (actionable items)
+INSTRUCTIONS:
+1. Use the ACTUAL subdomain names from the findings data above (e.g., "new.computerplus.it", "api.example.com")
+2. Do NOT use generic placeholders like "Subdomain A" or "Subdomain B"
+3. Reference specific vulnerabilities found for each subdomain
+4. Include CVE IDs when present
 
-Be concise and professional.`,
+Generate report with:
+## Executive Summary (2-3 sentences with real subdomain names)
+## Critical Findings (list each affected subdomain by name with its issues)
+## Recommendations (actionable items referencing specific subdomains)
+
+Be concise and professional. Use the real data provided above.`,
 		stats["total"], stats["active"], stats["vulns"], stats["takeovers"], truncate(findings, 3000))
 
 	response, err := c.query(c.DeepModel, prompt, 45*time.Second)
@@ -255,34 +261,106 @@ Be concise and professional.`,
 }
 
 // CVEMatch checks for known vulnerabilities in detected technologies
+// Returns concise format directly: "CVE-ID (SEVERITY/SCORE), ..."
 func (c *OllamaClient) CVEMatch(technology, version string) (string, error) {
-	// Call SearchCVE directly instead of using function calling (more reliable)
+	// Call SearchCVE directly - it now returns concise format with caching
 	cveData, err := SearchCVE(technology, version)
 	if err != nil {
 		return "", err
 	}
 
-	// If no CVEs found, return empty
-	if strings.Contains(cveData, "No known CVE vulnerabilities found") {
-		return "", nil
+	// Return directly without AI processing - the format is already clean
+	return cveData, nil
+}
+
+// FilterSecrets uses AI to filter false positives from potential secrets
+// Returns only real secrets, filtering out UI text, placeholders, and example values
+func (c *OllamaClient) FilterSecrets(potentialSecrets []string) ([]string, error) {
+	if len(potentialSecrets) == 0 {
+		return nil, nil
 	}
 
-	// Ask AI to analyze the CVE data
-	prompt := fmt.Sprintf(`Analyze these CVE vulnerabilities for %s and provide a concise security assessment:
+	// Build the list of secrets for AI analysis
+	secretsList := strings.Join(potentialSecrets, "\n")
 
+	prompt := fmt.Sprintf(`Task: Filter JavaScript findings. Output only REAL secrets.
+
+Examples of FAKE (do NOT output):
+- Change Password (UI button text)
+- Update Password (UI button text)
+- Password (just a word)
+- Enter your API key (placeholder)
+- YOUR_API_KEY (placeholder)
+- Login, Token, Secret (single words)
+
+Examples of REAL (DO output):
+- pk_test_TYooMQauvdEDq54NiTphI7jx (Stripe key - has random chars)
+- AKIAIOSFODNN7EXAMPLE (AWS key - 20 char pattern)
+- mongodb://admin:secret123@db.example.com (connection string)
+- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (JWT token)
+
+Input findings:
 %s
 
-Provide a 2-3 sentence summary focusing on:
-- Most critical vulnerabilities
-- Key recommendations`, technology, cveData)
+Output only the REAL secrets in their original [Type] format, one per line. If none are real, output: NONE`, secretsList)
 
-	response, err := c.query(c.FastModel, prompt, 20*time.Second)
+	response, err := c.query(c.FastModel, prompt, 15*time.Second)
 	if err != nil {
-		// If AI analysis fails, return the raw CVE data
-		return cveData, nil
+		// On error, return original list (fail open for security)
+		return potentialSecrets, nil
 	}
 
-	return response, nil
+	// Parse response
+	response = strings.TrimSpace(response)
+	if strings.ToUpper(response) == "NONE" || response == "" {
+		return nil, nil
+	}
+
+	var realSecrets []string
+
+	// First, try to find secrets in [Type] format in the response
+	lines := strings.Split(response, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.ToUpper(line) == "NONE" {
+			continue
+		}
+		// Accept any line that contains our format [Type] value
+		if strings.Contains(line, "[") && strings.Contains(line, "]") {
+			// Extract the [Type] value part
+			startIdx := strings.Index(line, "[")
+			if startIdx >= 0 {
+				// Find the actual secret value after ]
+				endBracket := strings.Index(line[startIdx:], "]")
+				if endBracket > 0 {
+					// Get everything from [ to end of meaningful content
+					secretPart := line[startIdx:]
+					// Remove trailing explanations (after " –" or " -")
+					if dashIdx := strings.Index(secretPart, " –"); dashIdx > 0 {
+						secretPart = secretPart[:dashIdx]
+					}
+					if dashIdx := strings.Index(secretPart, " -"); dashIdx > 0 {
+						secretPart = secretPart[:dashIdx]
+					}
+					secretPart = strings.TrimSpace(secretPart)
+					if secretPart != "" && strings.HasPrefix(secretPart, "[") {
+						realSecrets = append(realSecrets, secretPart)
+					}
+				}
+			}
+		}
+	}
+
+	// If AI returned nothing valid but we had input, something went wrong
+	// Return original secrets (fail-safe: better false positives than miss real ones)
+	if len(realSecrets) == 0 && len(potentialSecrets) > 0 {
+		// Check if response contains "NONE" anywhere - that's a valid empty result
+		if !strings.Contains(strings.ToUpper(response), "NONE") {
+			return potentialSecrets, nil
+		}
+	}
+
+	return realSecrets, nil
 }
 
 // query sends a request to Ollama API
